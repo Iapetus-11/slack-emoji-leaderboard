@@ -2,8 +2,8 @@ import asyncio
 import logging
 from typing import Any
 
-from slack_bolt.async_app import AsyncApp, AsyncSay
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
+from slack_bolt.async_app import AsyncApp, AsyncSay
 
 from config import CONFIG
 
@@ -40,7 +40,5 @@ async def main():
     await serve_forever()
 
 
-
 if __name__ == "__main__":
     asyncio.run(main())
-
