@@ -1,24 +1,46 @@
+import asyncio
 import logging
+from typing import Any
 
-from slack_bolt import App
-from slack_bolt.adapter.socket_mode import SocketModeHandler
+from slack_bolt.async_app import AsyncApp, AsyncSay
+from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 
 from config import CONFIG
 
-app = App(
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = AsyncApp(
     token=CONFIG.SLACK_BOT_TOKEN,
 )
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+
+@app.event("message")
+async def handle_message(message: dict[str, Any], say: AsyncSay):
+    logger.info(type(message), message)
+    logger.info(type(say), say)
 
 
-@app.message("test-lb-bot")
-def test(message, say):
-    print(message)
-    say("Hello World!")
+async def on_ready():
+    data = await app.client.emoji_list()
+    print("#######", data)
+
+
+async def serve_forever():
+    while True:
+        await asyncio.sleep(1800)
+
+
+async def main():
+    app_handler = AsyncSocketModeHandler(app, CONFIG.SLACK_APP_TOKEN, logger=logger)
+    asyncio.create_task(on_ready())
+
+    await app_handler.connect_async()
+    await on_ready()
+    await serve_forever()
+
 
 
 if __name__ == "__main__":
-    SocketModeHandler(app, CONFIG.SLACK_APP_TOKEN, logger=logger).start()
+    asyncio.run(main())
 

@@ -5,11 +5,16 @@ from pydantic import BaseModel
 
 
 class AppConfig(BaseModel):
+    DATABASE_URL: str
     SLACK_BOT_TOKEN: str
     SLACK_APP_TOKEN: str
 
     class Config:
         frozen = True
+
+
+CONFIG: AppConfig
+TORTOISE_ORM: dict[str, Any]
 
 
 def load_config() -> AppConfig:
@@ -55,3 +60,13 @@ if __name__ == "__main__":
     print("Done!")
 else:
     CONFIG = load_config()
+
+    TORTOISE_ORM = {
+        "connections": {"default": CONFIG.DATABASE_URL},
+        "apps": {
+            "models": {
+                "models": ["aerich.models", "src.models"],
+                "default_connection": "default",
+            }
+        },
+    }
