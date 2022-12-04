@@ -1,5 +1,5 @@
 import logging
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -11,10 +11,11 @@ from starlette.middleware import Middleware as StarletteMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from tortoise import Tortoise
 from tortoise.expressions import F
-from tortoise.functions import Sum
+from tortoise.functions import Count, Sum
 
 from src.config import CONFIG, TORTOISE_ORM
-from src.models import SlackEmoji, SlackMessage, SlackMessageEmojiUse, SlackUserEmojiReactions
+from src.docs.route_models import Api_Emojis, Api_Emojis_Leaderboard
+from src.models import SlackEmoji, SlackEmojiAlias, SlackMessage, SlackMessageEmojiUse, SlackMessageEmojiReaction
 from src.utils.slack import get_block_emojis
 
 logging.basicConfig(level=getattr(logging, CONFIG.LOG_LEVEL))
@@ -49,8 +50,11 @@ async def app_handle_message(event: dict[str, Any]):
         timestamp=event["ts"],
     )
 
-    for emoji, count in Counter(get_block_emojis(event.get("blocks", []))).items():
-        await SlackMessageEmojiUse.create(message=db_message, emoji_id=emoji, count=count)
+    emoji_counter = Counter(get_block_emojis(event.get("blocks", [])))
+    emoji_aliases = {a.id: a.to_id for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])}
+
+    for emoji, count in emoji_counter.items():
+        await SlackMessageEmojiUse.create(message=db_message, emoji_id=emoji_aliases.get(emoji, emoji), count=count)
 
 
 @app.event("reaction_added")
@@ -58,12 +62,20 @@ async def app_handle_reaction_added(event: dict[str, Any]):
     if event["item"]["type"] != "message":
         return
 
-    user_reactions, _ = await SlackUserEmojiReactions.get_or_create(
-        emoji_id=event["reaction"], user_id=event["user"], defaults={"count": 0}
+    # Using the channel, author, and timestamp we can figure out the actual message that was sent
+    # (Because Slack does not send us the message id)
+    reaction_message = await SlackMessage.get_or_none(
+        channel_id=event["item"]["channel"],
+        user_id=event["item_user"],
+        timestamp=event["item"]["ts"],
     )
 
-    user_reactions.count += 1
-    await user_reactions.save()
+    if reaction_message:
+        await SlackMessageEmojiReaction.create(
+            emoji_id=event["reaction"],
+            user_id=event["user"],
+            message=reaction_message,
+        )
 
 
 @app.event("reaction_removed")
@@ -71,14 +83,14 @@ async def app_handle_reaction_removed(event: dict[str, Any]):
     if event["item"]["type"] != "message":
         return
 
-    if user_reactions := await SlackUserEmojiReactions.get_or_none(
-        emoji_id=event["reaction"], user_id=event["user"]
+    if user_reaction := await SlackMessageEmojiReaction.get_or_none(
+        emoji_id=event["reaction"],
+        user_id=event["user"],
+        message__channel_id=event["item"]["channel"],
+        message__user_id=event["item_user"],
+        message__timestamp=event["item"]["ts"],
     ):
-        if user_reactions.count <= 1:
-            await user_reactions.delete()
-        else:
-            user_reactions.count -= 1
-            await user_reactions.save()
+        await user_reaction.delete()
 
 
 @api.get("/")
@@ -89,20 +101,35 @@ async def api_home():
             "url": "https://iapetus11.me",
         },
         "source": "https://github.com/Iapetus-11/slack-leaderboard",
+        "docs": "/docs",
     }
 
 
-@api.get("/emojis/")
+@api.get(
+    "/emojis/",
+    description="Fetch a mapping of emojis to their image urls and aliases",
+    response_model=Api_Emojis
+)
 async def api_emojis():
-    return {emoji.id: emoji.url for emoji in await SlackEmoji.all()}
+    return {
+        emoji.id: {
+            "url": emoji.url,
+            "aliases": [a.id for a in emoji.aliases],
+        }
+        async for emoji in SlackEmoji.all().prefetch_related("aliases")
+    }
 
 
-@api.get("/emojis/leaderboard/")
+@api.get(
+    "/emojis/leaderboard/",
+    description="Fetch a mapping of emojis to their total uses in messages and reactions",
+    response_model=Api_Emojis_Leaderboard,
+)
 async def api_emojis_leaderboards(since: datetime = Query(None)):
     if not since:
         since = datetime.utcnow() - timedelta(days=7)
 
-    data = {
+    message_emoji_use = {
         r["emoji_id"]: r["uses"]
         for r in (
             await SlackMessageEmojiUse.filter(created_at__gt=since)
@@ -112,16 +139,21 @@ async def api_emojis_leaderboards(since: datetime = Query(None)):
         )
     }
 
-    data.update(
-        {
-            r["emoji_id"]: r["count"]
-            for r in await SlackUserEmojiReactions.all().values("emoji_id", "count")
-        }
-    )
+    reaction_emoji_use = {
+        r["emoji_id"]: r["uses"]
+        for r in (
+            await SlackMessageEmojiReaction.filter(created_at__gt=since)
+            .group_by("emoji_id")
+            .annotate(uses=Count("id"))
+            .values("emoji_id", "uses")
+        )
+    }
 
-    data = dict(sorted(data.items(), key=(lambda kv: kv[1]), reverse=True))
+    leaderboard = defaultdict[str, int](int)
+    for emoji_id, uses in [*message_emoji_use.items(), *reaction_emoji_use.items()]:
+        leaderboard[emoji_id] += uses
 
-    return data
+    return dict(sorted(leaderboard.items(), key=(lambda kv: kv[1]), reverse=True))
 
 
 async def sync_emojis():
@@ -142,21 +174,22 @@ async def sync_emojis():
             id=name, defaults={"hash": emoji_hash, "url": url}
         )
 
-    # We treat emoji aliases as their own emojis in our db
     for alias_name, name in aliases.items():
         if emoji := emojis.get(name):
-            await SlackEmoji.get_or_create(
-                id=alias_name, defaults={"hash": emoji.hash, "url": emoji.url}
+            await SlackEmojiAlias.get_or_create(
+                id=alias_name, defaults={"to_id": emoji.id}
             )
 
 
 @api.on_event("startup")
 async def api_handle_startup():
     await Tortoise.init(TORTOISE_ORM)
+    logger.info("Initialized Tortoise")
 
     await app_handler.connect_async()
 
     await sync_emojis()
+    logger.info("Synced Slack emojis to database")
 
 
 @api.on_event("shutdown")

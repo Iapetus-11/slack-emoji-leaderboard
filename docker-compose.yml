@@ -8,3 +8,5 @@ services:
         source: ./.env
         target: /slack-leaderboards/.env
     init: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

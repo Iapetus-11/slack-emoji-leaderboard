@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS "slackmessage" (
     "char_count" INT NOT NULL,
     "timestamp" DOUBLE PRECISION NOT NULL
 );
+CREATE TABLE IF NOT EXISTS "slackmessageemojireaction" (
+    "id" SERIAL NOT NULL PRIMARY KEY,
+    "updated_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
+    "user_id" VARCHAR(32) NOT NULL,
+    "emoji_id" VARCHAR(64) NOT NULL REFERENCES "slackemoji" ("id") ON DELETE CASCADE,
+    "message_id" UUID NOT NULL REFERENCES "slackmessage" ("id") ON DELETE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "slackmessageemojiuse" (
     "id" SERIAL NOT NULL PRIMARY KEY,
     "updated_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
@@ -32,14 +40,6 @@ CREATE TABLE IF NOT EXISTS "slackmessageemojiuse" (
     "count" INT NOT NULL,
     "emoji_id" VARCHAR(64) NOT NULL REFERENCES "slackemoji" ("id") ON DELETE CASCADE,
     "message_id" UUID NOT NULL REFERENCES "slackmessage" ("id") ON DELETE CASCADE
-);
-CREATE TABLE IF NOT EXISTS "slackuseremojireactions" (
-    "id" SERIAL NOT NULL PRIMARY KEY,
-    "updated_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
-    "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
-    "user_id" VARCHAR(32) NOT NULL,
-    "count" INT NOT NULL,
-    "emoji_id" VARCHAR(64) NOT NULL REFERENCES "slackemoji" ("id") ON DELETE CASCADE
 );"""
 
 

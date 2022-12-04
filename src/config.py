@@ -69,7 +69,7 @@ else:
         "connections": {"default": CONFIG.DATABASE_URL},
         "apps": {
             "models": {
-                "models": ["src.models"],
+                "models": ["aerich.models", "src.models"],
                 "default_connection": "default",
             }
         },
