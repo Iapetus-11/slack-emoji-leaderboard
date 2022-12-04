@@ -22,7 +22,7 @@ class Api_Emojis(BaseModel):
                 "smug": {
                     "url": "https://emoji.slack-edge.com/T0E2GB46A/smug/d88c2a0597ef61d5.png",
                     "aliases": ["evil"],
-                }
+                },
             }
         }
 

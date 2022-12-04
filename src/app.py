@@ -15,7 +15,13 @@ from tortoise.functions import Count, Sum
 
 from src.config import CONFIG, TORTOISE_ORM
 from src.docs.route_models import Api_Emojis, Api_Emojis_Leaderboard
-from src.models import SlackEmoji, SlackEmojiAlias, SlackMessage, SlackMessageEmojiUse, SlackMessageEmojiReaction
+from src.models import (
+    SlackEmoji,
+    SlackEmojiAlias,
+    SlackMessage,
+    SlackMessageEmojiReaction,
+    SlackMessageEmojiUse,
+)
 from src.utils.slack import get_block_emojis
 
 logging.basicConfig(level=getattr(logging, CONFIG.LOG_LEVEL))
@@ -51,10 +57,14 @@ async def app_handle_message(event: dict[str, Any]):
     )
 
     emoji_counter = Counter(get_block_emojis(event.get("blocks", [])))
-    emoji_aliases = {a.id: a.to_id for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])}
+    emoji_aliases = {
+        a.id: a.to_id for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
+    }
 
     for emoji, count in emoji_counter.items():
-        await SlackMessageEmojiUse.create(message=db_message, emoji_id=emoji_aliases.get(emoji, emoji), count=count)
+        await SlackMessageEmojiUse.create(
+            message=db_message, emoji_id=emoji_aliases.get(emoji, emoji), count=count
+        )
 
 
 @app.event("reaction_added")
@@ -108,7 +118,7 @@ async def api_home():
 @api.get(
     "/emojis/",
     description="Fetch a mapping of emojis to their image urls and aliases",
-    response_model=Api_Emojis
+    response_model=Api_Emojis,
 )
 async def api_emojis():
     return {
@@ -176,9 +186,7 @@ async def sync_emojis():
 
     for alias_name, name in aliases.items():
         if emoji := emojis.get(name):
-            await SlackEmojiAlias.get_or_create(
-                id=alias_name, defaults={"to_id": emoji.id}
-            )
+            await SlackEmojiAlias.get_or_create(id=alias_name, defaults={"to_id": emoji.id})
 
 
 @api.on_event("startup")
