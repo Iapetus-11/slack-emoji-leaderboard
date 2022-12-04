@@ -69,8 +69,19 @@ else:
         "connections": {"default": CONFIG.DATABASE_URL},
         "apps": {
             "models": {
-                "models": ["aerich.models", "src.models"],
+                "models": ["src.models"],
                 "default_connection": "default",
             }
+        },
+    }
+
+    # Config specifically for use with Aerich
+    TORTOISE_ORM_AERICH = {
+        **TORTOISE_ORM,
+        "apps": {
+            "models": {
+                "models": ["aerich.models", "src.models"],
+                "default_connection": "default",
+            },
         },
     }

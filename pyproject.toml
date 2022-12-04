@@ -25,7 +25,7 @@ autoflake = "^2.0.0"
 aerich = "^0.7.1"
 
 [tool.aerich]
-tortoise_orm = "src.config.TORTOISE_ORM"
+tortoise_orm = "src.config.TORTOISE_ORM_AERICH"
 location = "./migrations"
 src_folder = "./."
 
