@@ -1,13 +1,17 @@
 from typing import Any, Dict
 
 import dotenv
-from pydantic import BaseModel
+from pydantic import BaseModel, Json
 
 
 class AppConfig(BaseModel):
+    LOG_LEVEL: str
     DATABASE_URL: str
     SLACK_BOT_TOKEN: str
     SLACK_APP_TOKEN: str
+    API_HOST: str
+    API_PORT: int
+    API_CORS_ORIGINS: Json[list[str]]
 
     class Config:
         frozen = True
@@ -65,7 +69,7 @@ else:
         "connections": {"default": CONFIG.DATABASE_URL},
         "apps": {
             "models": {
-                "models": ["aerich.models", "src.models"],
+                "models": ["src.models"],
                 "default_connection": "default",
             }
         },

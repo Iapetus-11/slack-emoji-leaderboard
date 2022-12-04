@@ -1,0 +1,10 @@
+version: "3.7"
+services:
+  app:
+    build:
+      dockerfile: Dockerfile
+    volumes:
+      - type: bind
+        source: ./.env
+        target: /slack-leaderboards/.env
+    init: true

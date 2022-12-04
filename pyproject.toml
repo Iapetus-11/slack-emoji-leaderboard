@@ -13,6 +13,9 @@ python-dotenv = "^0.21.0"
 pydantic = "^1.10.2"
 aiohttp = "^3.8.3"
 tortoise-orm = {extras = ["asyncpg"], version = "^0.19.2"}
+asyncpg = "^0.27.0"
+fastapi = "^0.88.0"
+uvicorn = "^0.20.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^0.991"
@@ -21,6 +24,11 @@ isort = "^5.10.1"
 black = "^22.10.0"
 autoflake = "^2.0.0"
 aerich = "^0.7.1"
+
+[tool.aerich]
+tortoise_orm = "src.config.TORTOISE_ORM"
+location = "./migrations"
+src_folder = "./."
 
 [build-system]
 requires = ["poetry-core"]
