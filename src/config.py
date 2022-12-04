@@ -44,10 +44,9 @@ def _generate_example_env():
     lines = list[str]()
     current_section = ""
 
+    name: str
+    field_data: dict[str, Any]
     for name, field_data in AppConfig.schema()["properties"].items():
-        name: str
-        field_data: dict
-
         if (section := name.split("_")[0]) != current_section:
             current_section = section
             lines.append("\n")

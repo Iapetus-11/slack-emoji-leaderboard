@@ -9,4 +9,4 @@ class SlackEmoji(BaseModel):
     hash = fields.CharField(max_length=32)
     url = fields.CharField(max_length=128)
 
-    aliases: ReverseRelation["SlackEmojiAlias"]
+    aliases: ReverseRelation["SlackEmojiAlias"]  # noqa: F821
