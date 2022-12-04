@@ -12,6 +12,7 @@ from starlette.middleware.cors import CORSMiddleware
 from tortoise import Tortoise
 from tortoise.expressions import F
 from tortoise.functions import Count, Sum
+from tortoise.transactions import in_transaction
 
 from src.config import CONFIG, TORTOISE_ORM
 from src.docs.route_models import Api_Emojis, Api_Emojis_Leaderboard
@@ -48,23 +49,44 @@ api = FastAPI(
 
 @app.event("message")
 async def app_handle_message(event: dict[str, Any]):
-    db_message = await SlackMessage.create(
-        id=event["client_msg_id"],
-        user_id=event["user"],
-        channel_id=event["channel"],
-        char_count=len(event["text"]),
-        timestamp=event["ts"],
-    )
-
-    emoji_counter = Counter(get_block_emojis(event.get("blocks", [])))
-    emoji_aliases = {
-        a.id: a.to_id for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
-    }
-
-    for emoji, count in emoji_counter.items():
-        await SlackMessageEmojiUse.create(
-            message=db_message, emoji_id=emoji_aliases.get(emoji, emoji), count=count
+    # Handle a new message
+    if not (event_subtype := event.get('subtype')):
+        db_message = await SlackMessage.create(
+            id=event["client_msg_id"],
+            user_id=event["user"],
+            channel_id=event["channel"],
+            char_count=len(event["text"]),
+            timestamp=event["ts"],
         )
+
+        emoji_counter = Counter(get_block_emojis(event.get("blocks", [])))
+        emoji_aliases = {
+            a.id: a.to_id for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
+        }
+
+        for emoji, count in emoji_counter.items():
+            await SlackMessageEmojiUse.create(
+                message=db_message, emoji_id=emoji_aliases.get(emoji, emoji), count=count
+            )
+    # Handle an existing message being edited
+    elif event_subtype == "message_changed":
+        if message := await SlackMessage.get_or_none(id=event["message"]["client_msg_id"]):
+            emoji_counter = Counter(get_block_emojis(event["message"].get("blocks", [])))
+            emoji_aliases = {
+                a.id: a.to_id for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
+            }
+
+            async with in_transaction():
+                await SlackMessageEmojiUse.filter(message_id=message.id).delete()
+
+                for emoji, count in emoji_counter.items():
+                    await SlackMessageEmojiUse.create(
+                        message=message, emoji_id=emoji_aliases.get(emoji, emoji), count=count
+                    )
+    # Handle an existing message being deleted
+    elif event_subtype == "message_deleted":
+        if message := await SlackMessage.get_or_none(id=event["previous_message"]["client_msg_id"]):
+            await message.delete()
 
 
 @app.event("reaction_added")
