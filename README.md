@@ -1,4 +1,5 @@
 # slack-leaderboard
+*Tracks emoji use to generate an emoji leaderboard for the MedShift slack*
 
 ## Setup
 ### Locally
@@ -16,3 +17,9 @@
 2. Run `docker compose build` to build the image
 3. Run `docker compose up -d` to start the app
 - To view logs you can run `docker compose logs -f`
+
+## Technologies
+- [Slack Bolt](https://slack.dev/bolt-python/concepts)
+- [Tortoise ORM](https://tortoise-orm.readthedocs.io/)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [Docker](https://docker.com/)
