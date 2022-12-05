@@ -1,7 +1,6 @@
 from tortoise import fields
 
 from src.models import BaseModel
-from src.models.slack_message_emoij_use import SlackMessageEmojiUse
 
 
 class SlackMessage(BaseModel):
@@ -11,4 +10,5 @@ class SlackMessage(BaseModel):
     char_count = fields.IntField()
     timestamp = fields.FloatField()
 
-    emojis: fields.ReverseRelation["SlackMessageEmojiUse"]
+    emojis: fields.ReverseRelation["SlackMessageEmojiUse"]  # noqa: F821
+    reactions: fields.ReverseRelation["SlackMessageEmojiReaction"]  # noqa: F821
