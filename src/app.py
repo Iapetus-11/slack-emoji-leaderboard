@@ -1,4 +1,5 @@
 import logging
+import re
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from typing import Any
@@ -7,6 +8,7 @@ import uvicorn
 from fastapi import FastAPI, Query
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
+from slack_bolt.context.say.async_say import AsyncSay
 from starlette.middleware import Middleware as StarletteMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from tortoise import Tortoise, transactions
@@ -23,6 +25,8 @@ from src.models import (
     SlackMessageEmojiUse,
 )
 from src.utils.slack import get_block_emojis
+
+EMOJIBOARD_RE = re.compile(r"emojiboard\(.*\)", re.IGNORECASE)
 
 logging.basicConfig(level=getattr(logging, CONFIG.LOG_LEVEL))
 logger = logging.getLogger("app")
@@ -70,6 +74,48 @@ async def sync_emojis():
             await SlackEmojiAlias.create(id=alias_name, to_id=emoji.id)
 
 
+async def fetch_emoji_leaderboard(*, since: datetime | None = None, unique: bool = True) -> dict[str, int]:
+    if not since:
+        since = datetime.utcnow() - timedelta(days=7)
+
+    message_emoji_use = {
+        r["emoji_id"]: r["uses"]
+        for r in (
+            await SlackMessageEmojiUse.filter(created_at__gt=since, emoji__id__not_in=CONFIG.IGNORED_EMOJIS)
+            .group_by("emoji_id")
+            .annotate(uses=(Count("id") if unique else Sum(F("count"))))
+            .values("emoji_id", "uses")
+        )
+    }
+
+    reaction_emoji_use = {
+        r["emoji_id"]: r["uses"]
+        for r in (
+            await SlackMessageEmojiReaction.filter(created_at__gt=since, emoji__id__not_in=CONFIG.IGNORED_EMOJIS)
+            .group_by("emoji_id")
+            .annotate(uses=Count("id"))
+            .values("emoji_id", "uses")
+        )
+    }
+
+    leaderboard = defaultdict[str, int](int)
+    for emoji_id, uses in [*message_emoji_use.items(), *reaction_emoji_use.items()]:
+        leaderboard[emoji_id] += uses
+
+    return dict(sorted(leaderboard.items(), key=(lambda kv: kv[1]), reverse=True))
+
+
+async def app_message_emojiboard(message: dict[str, Any], say: AsyncSay):
+    args = dict(a.split('=') for a in message['text'].removeprefix('emojiboard(').removesuffix(')').strip().lower().split() if len(a.split('=')) == 2)
+
+    unique = args.get('unique') != 'false'
+
+    emoji_board = [*(await fetch_emoji_leaderboard(unique=unique)).items()][:10]
+    emoji_board = "\n".join(f"{i}.  `{' ' * (len(str(emoji_board[0][1])) - len(str(count)))}{count}x`  :{emoji}:" for i, (emoji, count) in enumerate(emoji_board))
+
+    await say(emoji_board, response_type="in_channel")
+
+
 @app.event("emoji_changed")
 async def emoji_changed(event: dict[str, Any]):
     # Stripe docs says to reload all emojis if the subtype is nonexistent
@@ -100,9 +146,14 @@ async def emoji_changed(event: dict[str, Any]):
 
 
 @app.event("message")
-async def app_handle_message(event: dict[str, Any]):
+async def app_handle_message(event: dict[str, Any], say: AsyncSay):
     # Handle a new message
     if not (event_subtype := event.get('subtype')):
+        # We have to dispatch this here manually because adding an event handler for all messages disables
+        # individual message handlers
+        if EMOJIBOARD_RE.match(event['text']):
+            await app_message_emojiboard(event, say)
+
         db_message = await SlackMessage.create(
             id=event["client_msg_id"],
             user_id=event["user"],
@@ -210,34 +261,7 @@ async def api_emojis():
     response_model=Api_Emojis_Leaderboard,
 )
 async def api_emojis_leaderboards(since: datetime = Query(None), unique: bool = Query(True)):
-    if not since:
-        since = datetime.utcnow() - timedelta(days=7)
-
-    message_emoji_use = {
-        r["emoji_id"]: r["uses"]
-        for r in (
-            await SlackMessageEmojiUse.filter(created_at__gt=since)
-            .group_by("emoji_id")
-            .annotate(uses=(Count("id") if unique else Sum(F("count"))))
-            .values("emoji_id", "uses")
-        )
-    }
-
-    reaction_emoji_use = {
-        r["emoji_id"]: r["uses"]
-        for r in (
-            await SlackMessageEmojiReaction.filter(created_at__gt=since)
-            .group_by("emoji_id")
-            .annotate(uses=Count("id"))
-            .values("emoji_id", "uses")
-        )
-    }
-
-    leaderboard = defaultdict[str, int](int)
-    for emoji_id, uses in [*message_emoji_use.items(), *reaction_emoji_use.items()]:
-        leaderboard[emoji_id] += uses
-
-    return dict(sorted(leaderboard.items(), key=(lambda kv: kv[1]), reverse=True))
+    return await fetch_emoji_leaderboard(since=since, unique=unique)
 
 
 @api.on_event("startup")
