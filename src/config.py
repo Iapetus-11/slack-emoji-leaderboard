@@ -12,6 +12,7 @@ class AppConfig(BaseModel):
     API_HOST: str
     API_PORT: int
     API_CORS_ORIGINS: Json[list[str]]
+    IGNORED_EMOJIS: Json[list[str]]
 
     class Config:
         frozen = True
