@@ -65,23 +65,25 @@ async def sync_emojis():
             aliases[name] = url.split(":")[1]
             continue
 
-        emojis[name], _ = await SlackEmoji.update_or_create(
-            id=name, defaults={"url": url}
-        )
+        emojis[name], _ = await SlackEmoji.update_or_create(id=name, defaults={"url": url})
 
     for alias_name, name in aliases.items():
         if emoji := emojis.get(name):
             await SlackEmojiAlias.create(id=alias_name, to_id=emoji.id)
 
 
-async def fetch_emoji_leaderboard(*, since: datetime | None = None, unique: bool = True) -> dict[str, int]:
+async def fetch_emoji_leaderboard(
+    *, since: datetime | None = None, unique: bool = True
+) -> dict[str, int]:
     if not since:
         since = datetime.utcnow() - timedelta(days=7)
 
     message_emoji_use = {
         r["emoji_id"]: r["uses"]
         for r in (
-            await SlackMessageEmojiUse.filter(created_at__gt=since, emoji__id__not_in=CONFIG.IGNORED_EMOJIS)
+            await SlackMessageEmojiUse.filter(
+                created_at__gt=since, emoji__id__not_in=CONFIG.IGNORED_EMOJIS
+            )
             .group_by("emoji_id")
             .annotate(uses=(Count("id") if unique else Sum(F("count"))))
             .values("emoji_id", "uses")
@@ -91,7 +93,9 @@ async def fetch_emoji_leaderboard(*, since: datetime | None = None, unique: bool
     reaction_emoji_use = {
         r["emoji_id"]: r["uses"]
         for r in (
-            await SlackMessageEmojiReaction.filter(created_at__gt=since, emoji__id__not_in=CONFIG.IGNORED_EMOJIS)
+            await SlackMessageEmojiReaction.filter(
+                created_at__gt=since, emoji__id__not_in=CONFIG.IGNORED_EMOJIS
+            )
             .group_by("emoji_id")
             .annotate(uses=Count("id"))
             .values("emoji_id", "uses")
@@ -106,12 +110,24 @@ async def fetch_emoji_leaderboard(*, since: datetime | None = None, unique: bool
 
 
 async def app_message_emojiboard(message: dict[str, Any], say: AsyncSay):
-    args = dict(a.split('=') for a in message['text'].removeprefix('emojiboard(').removesuffix(')').strip().lower().split() if len(a.split('=')) == 2)
+    args = dict(
+        a.split("=")
+        for a in message["text"]
+        .removeprefix("emojiboard(")
+        .removesuffix(")")
+        .strip()
+        .lower()
+        .split()
+        if len(a.split("=")) == 2
+    )
 
-    unique = args.get('unique') != 'false'
+    unique = args.get("unique") != "false"
 
     emoji_board = [*(await fetch_emoji_leaderboard(unique=unique)).items()][:10]
-    emoji_board = "\n".join(f"{i}.  `{' ' * (len(str(emoji_board[0][1])) - len(str(count)))}{count}x`  :{emoji}:" for i, (emoji, count) in enumerate(emoji_board))
+    emoji_board = "\n".join(
+        f"{i}.  `{' ' * (len(str(emoji_board[0][1])) - len(str(count)))}{count}x`  :{emoji}:"
+        for i, (emoji, count) in enumerate(emoji_board)
+    )
 
     await say(emoji_board, response_type="in_channel")
 
@@ -119,23 +135,23 @@ async def app_message_emojiboard(message: dict[str, Any], say: AsyncSay):
 @app.event("emoji_changed")
 async def emoji_changed(event: dict[str, Any]):
     # Stripe docs says to reload all emojis if the subtype is nonexistent
-    if not (event_subtype := event.get('subtype')):
+    if not (event_subtype := event.get("subtype")):
         await sync_emojis()
     # Handle when a new emoji or emoji alias is added
     elif event_subtype == "add":
         emoji_url = event["value"]
 
-        if 'alias:' in emoji_url:
+        if "alias:" in emoji_url:
             await SlackEmojiAlias.create(id=event["name"], to=emoji_url.split(":")[1])
         else:
-            await SlackEmoji.create(id=event["name"], url=event['value'])
+            await SlackEmoji.create(id=event["name"], url=event["value"])
     # Handle when an emoji or emoji alias is removed
     elif event_subtype == "remove":
         await SlackEmoji.filter(id__in=event["names"]).delete()
         await SlackEmojiAlias.filter(id__in=event["names"]).delete()
     # Handle when an emoji or emoji alias is renamed
     elif event_subtype == "rename":
-        if 'alias:' in event["value"]:
+        if "alias:" in event["value"]:
             cls = SlackEmojiAlias
         else:
             cls = SlackEmoji
@@ -148,10 +164,10 @@ async def emoji_changed(event: dict[str, Any]):
 @app.event("message")
 async def app_handle_message(event: dict[str, Any], say: AsyncSay):
     # Handle a new message
-    if not (event_subtype := event.get('subtype')):
+    if not (event_subtype := event.get("subtype")):
         # We have to dispatch this here manually because adding an event handler for all messages disables
         # individual message handlers
-        if EMOJIBOARD_RE.match(event['text']):
+        if EMOJIBOARD_RE.match(event["text"]):
             await app_message_emojiboard(event, say)
 
         db_message = await SlackMessage.create(
