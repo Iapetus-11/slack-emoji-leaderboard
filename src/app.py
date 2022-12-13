@@ -12,6 +12,7 @@ from slack_bolt.context.say.async_say import AsyncSay
 from starlette.middleware import Middleware as StarletteMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from tortoise import Tortoise, transactions
+from tortoise.exceptions import IntegrityError
 from tortoise.expressions import F
 from tortoise.functions import Count, Sum
 
@@ -222,11 +223,14 @@ async def app_handle_reaction_added(event: dict[str, Any]):
     )
 
     if reaction_message:
-        await SlackMessageEmojiReaction.create(
-            emoji_id=event["reaction"],
-            user_id=event["user"],
-            message=reaction_message,
-        )
+        try:
+            await SlackMessageEmojiReaction.create(
+                emoji_id=event["reaction"],
+                user_id=event["user"],
+                message=reaction_message,
+            )
+        except IntegrityError:
+            pass
 
 
 @app.event("reaction_removed")
