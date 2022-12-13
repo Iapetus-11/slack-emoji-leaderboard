@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
+from fastapi.responses import JSONResponse
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
 from slack_bolt.context.say.async_say import AsyncSay
@@ -246,6 +247,14 @@ async def app_handle_reaction_removed(event: dict[str, Any]):
         message__timestamp=event["item"]["ts"],
     ):
         await user_reaction.delete()
+
+
+@api.middleware("http")
+async def api_middleware_auth(request: Request, call_next):
+    if request.headers.get('Authorization') != CONFIG.API_AUTH:
+        return JSONResponse({"error": "unauthorized"}, status_code=403)
+
+    return await call_next(request)
 
 
 @api.get("/")

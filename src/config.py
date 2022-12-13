@@ -11,6 +11,7 @@ class AppConfig(BaseModel):
     SLACK_APP_TOKEN: str
     API_HOST: str
     API_PORT: int
+    API_AUTH: str
     API_CORS_ORIGINS: Json[list[str]]
     IGNORED_EMOJIS: Json[list[str]]
 
