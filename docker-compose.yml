@@ -1,12 +1,24 @@
 version: "3.7"
 services:
-  app:
+  backend:
     build:
-      dockerfile: Dockerfile
+      context: ./backend
+    ports:
+      - "2879:80"
     volumes:
       - type: bind
-        source: ./.env
-        target: /slack-leaderboards/.env
+        source: ./backend/.env
+        target: /slack-leaderboards/backend/.env
     init: true
     extra_hosts:
       - "host.docker.internal:host-gateway"
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "2880:5173"
+    volumes:
+      - type: bind
+        source: ./frontend/.env
+        target: /slack-leaderboards/frontend/.env
+    init: true
