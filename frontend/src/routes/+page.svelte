@@ -26,7 +26,7 @@
 
 <div class="flex h-screen justify-center items-center">
   <table class="flex flex-col space-y-3 w-2/3 lg:w-2/5">
-    {#each [...Object.entries(leaderboard).entries()] as [idx, [emoji, uses]] (emoji)}
+    {#each [...Object.entries(leaderboard).entries()].slice(0, 10) as [idx, [emoji, uses]] (emoji)}
       <LeaderboardItem
         emoji={[emoji, ...emojis[emoji].aliases].join('/')}
         iconUrl={emojis[emoji].url}
