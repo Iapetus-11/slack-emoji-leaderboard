@@ -10,7 +10,6 @@ from fastapi.responses import JSONResponse
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from slack_bolt.async_app import AsyncApp
 from slack_bolt.context.say.async_say import AsyncSay
-from starlette.middleware import Middleware as StarletteMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from tortoise import Tortoise, transactions
 from tortoise.exceptions import IntegrityError
@@ -39,16 +38,7 @@ app = AsyncApp(
 app_handler = AsyncSocketModeHandler(app, CONFIG.SLACK_APP_TOKEN, logger=logger)
 
 api = FastAPI(
-    middleware=[
-        StarletteMiddleware(
-            CORSMiddleware,
-            allow_origins=CONFIG.API_CORS_ORIGINS,
-            allow_credentials=True,
-            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            allow_headers=["*"],
-            expose_headers=["*"],
-        )
-    ],
+    redoc_url=None,
 )
 
 
@@ -251,7 +241,7 @@ async def app_handle_reaction_removed(event: dict[str, Any]):
 
 @api.middleware("http")
 async def api_middleware_auth(request: Request, call_next):
-    if request.headers.get('Authorization') != CONFIG.API_AUTH:
+    if request.headers.get("Authorization") != CONFIG.API_AUTH:
         return JSONResponse({"error": "unauthorized"}, status_code=403)
 
     return await call_next(request)
@@ -308,6 +298,15 @@ async def api_handle_startup():
 async def api_handle_shutdown():
     await app_handler.close_async()
 
+
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=CONFIG.API_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*", "Authorization"],
+    expose_headers=["*", "Authorization"],
+)
 
 if __name__ == "__main__":
     uvicorn.run(
