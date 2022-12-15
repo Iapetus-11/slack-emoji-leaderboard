@@ -13,7 +13,7 @@
   </td>
 
   <td>
-    <img class="mb-1 h-10 w-10" src={iconUrl} alt={emoji} />
+    <img class="mb-1 max-h-10 max-w-10" src={iconUrl} alt={emoji} />
   </td>
 
   <td>
