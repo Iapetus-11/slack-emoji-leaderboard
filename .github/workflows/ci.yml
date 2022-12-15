@@ -11,10 +11,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: set up python 3.10
+      - name: setup python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
+
+      - name: setup node 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
       - name: install poetry
         run: curl -sSL https://install.python-poetry.org | python3 -
@@ -22,25 +27,43 @@ jobs:
       - name: configure poetry
         run: poetry config virtualenvs.in-project true
 
-      - name: load cached venv
+      - name: load cached backend venv
         id: cached-poetry-dependencies
         uses: actions/cache@v2
         with:
-          path: .venv
+          path: ./backend/.venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
 
-      - name: install dependencies
-#        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      - name: load cached frontend node_modules
+        id: cached-npm-dependencies
+        uses: actions/cache@v2
+        with:
+          path: ./frontend/node_modules
+          key: venv-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+
+      - name: install backend dependencies
+        working-directory: ./backend
         run: poetry install
 
+      - name: install frontend dependencies
+        working-directory: ./frontend
+        run: yarn
+
       - name: auto-flake
+        working-directory: ./backend
         run: poetry run autoflake --remove-all-unused-imports --expand-star-imports --ignore-init-module-imports --in-place --recursive src/
 
       - name: black fix
+        working-directory: ./backend
         run: poetry run black .
 
       - name: isort fix
+        working-directory: ./backend
         run: poetry run isort .
+
+      - name: prettier fix
+        working-directory: ./frontend
+        run: yarn format
 
       - name: auto commit
         if: github.ref != 'refs/heads/main'
@@ -49,4 +72,5 @@ jobs:
           commit_message: format / fix code
 
       - name: flake8
+        working-directory: ./backend
         run: poetry run flake8
