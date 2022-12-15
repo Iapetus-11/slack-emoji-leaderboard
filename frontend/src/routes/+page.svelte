@@ -2,6 +2,7 @@
   import { onDestroy, onMount } from 'svelte';
   import { fetchEmojiLeaderboard, fetchEmojis } from '$lib/services/emojis.js';
   import LeaderboardItem from '$lib/components/LeaderboardItem.svelte';
+  import { PUBLIC_API_ADDRESS, PUBLIC_API_AUTH } from '$env/static/public';
 
   let loadInterval = null;
   let emojis = {};
@@ -24,6 +25,7 @@
 </svelte:head>
 
 <div class="flex h-screen justify-center items-center">
+  <p>{PUBLIC_API_ADDRESS}{PUBLIC_API_AUTH}</p>
   <table class="flex flex-col space-y-3 w-2/3 lg:w-2/5">
     {#each [...Object.entries(leaderboard).entries()] as [idx, [emoji, uses]] (emoji)}
       <LeaderboardItem
