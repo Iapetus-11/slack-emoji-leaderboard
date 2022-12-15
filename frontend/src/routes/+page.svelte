@@ -21,6 +21,7 @@
 
 <svelte:head>
   <title>Emoji Leaderboard</title>
+  <link rel="icon" type="image/x-icon" href={emojis[Object.entries(leaderboard)[0]?.[0]]?.url} />
 </svelte:head>
 
 <div class="flex h-screen justify-center items-center">
