@@ -16,7 +16,7 @@ services:
     build:
       context: ./frontend
     ports:
-      - "2880:5173"
+      - "2880:3000"
     volumes:
       - type: bind
         source: ./frontend/.env
