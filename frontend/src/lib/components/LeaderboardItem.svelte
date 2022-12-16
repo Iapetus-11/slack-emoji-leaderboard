@@ -1,23 +1,25 @@
 <script>
-  export let emoji;
+  export let names;
   export let iconUrl;
   export let position;
   export let uses;
 </script>
 
 <tr
-  class="flex flex-row items-center space-x-3 px-3 py-2 rounded-lg bg-gray-700 font-mono animate-fin"
+  class="flex flex-row items-center space-x-3 px-3 py-2 rounded-lg bg-gray-700 font-mono animate-fin text-sm md:text-base"
 >
   <td>
-    <h4 class="text-2xl font-semibold">{position}.</h4>
+    <h4 class="text-xl md:text-2xl font-semibold">{position}.</h4>
   </td>
 
   <td>
-    <img class="mb-1 h-10 w-10" src={iconUrl} alt={emoji} />
+    <img class="mb-1 max-h-10 w-10" src={iconUrl} alt={names.join(', ')} />
   </td>
 
-  <td>
-    <span class="px-2 py-1 bg-gray-800 rounded-md text-gray-300">{emoji}</span>
+  <td class="flex flex-row space-x-1.5">
+    {#each names as name}
+      <span class="px-2 py-1 bg-gray-800 rounded-md text-gray-300">{name}</span>
+    {/each}
   </td>
 
   <td class="!ml-auto">
