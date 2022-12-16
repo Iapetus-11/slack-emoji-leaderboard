@@ -6,9 +6,9 @@ WORKDIR /slack-leaderboards/frontend
 ADD package.json yarn.lock ./
 RUN yarn
 
-# build
-RUN yarn build
+# copy remaining files and build
 COPY . .
+RUN yarn build
 
 FROM node:18-alpine AS deploy
 
