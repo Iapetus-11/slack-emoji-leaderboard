@@ -1,11 +1,11 @@
-import { PUBLIC_API_ADDRESS, PUBLIC_API_AUTH } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 /**
  * @returns {Promise<{ emojis: Object<string, Object> }>}
  */
 export const fetchEmojis = () => {
-  return fetch(`${PUBLIC_API_ADDRESS}/emojis/`, {
-    headers: { Authorization: PUBLIC_API_AUTH },
+  return fetch(`${env.PUBLIC_API_ADDRESS}/emojis/`, {
+    headers: { Authorization: env.PUBLIC_API_AUTH },
   }).then((response) => response.json());
 };
 
@@ -14,7 +14,7 @@ export const fetchEmojis = () => {
  * @returns {Promise<Object<string, number>>}
  */
 export const fetchEmojiLeaderboard = (unique = false) => {
-  return fetch(`${PUBLIC_API_ADDRESS}/emojis/leaderboard/?unique=${unique}`, {
-    headers: { Authorization: PUBLIC_API_AUTH },
+  return fetch(`${env.PUBLIC_API_ADDRESS}/emojis/leaderboard/?unique=${unique}`, {
+    headers: { Authorization: env.PUBLIC_API_AUTH },
   }).then((response) => response.json());
 };

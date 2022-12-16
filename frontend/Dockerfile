@@ -2,9 +2,11 @@ FROM node:18-alpine AS build
 
 # make necessary directories and copy over files
 WORKDIR /slack-leaderboards/frontend
-COPY . .
+COPY src src
+COPY static static
+ADD yarn.lock *.json *.js *.cjs ./
 
-# install dependencies & build
+# install all dependencies & build
 RUN yarn
 RUN yarn build
 
@@ -17,7 +19,9 @@ RUN rm -rf ./*
 # copy over necessary files from build stage
 COPY --from=build /slack-leaderboards/frontend/package.json .
 COPY --from=build /slack-leaderboards/frontend/build .
+ADD .env .
 
+# install prod dependencies
 RUN yarn --prod
 
 CMD ["node", "index.js"]
