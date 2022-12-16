@@ -1,4 +1,4 @@
-import { PUBLIC_API_ADDRESS, PUBLIC_API_AUTH } from '$env/dynamic/public';
+import { PUBLIC_API_ADDRESS, PUBLIC_API_AUTH } from '$env/static/public';
 
 /**
  * @returns {Promise<{ emojis: Object<string, Object> }>}
