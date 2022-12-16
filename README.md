@@ -1,7 +1,7 @@
 # slack-leaderboard
 *Tracks emoji use to generate an emoji leaderboard for the MedShift slack*
 
-## Setup
+## Setup Backend
 ### Locally
 - You'll need: [Python 3.10.x+](https://python.org) and [Poetry](https://python-poetry.org)
 1. To install dependencies, run `poetry install`
@@ -19,7 +19,9 @@
 - To view logs you can run `docker compose logs -f`
 
 ## Technologies
+- [SvelteKit](https://kit.svelte.dev/)
 - [Slack Bolt](https://slack.dev/bolt-python/concepts)
-- [Tortoise ORM](https://tortoise-orm.readthedocs.io/)
 - [FastAPI](https://fastapi.tiangolo.com/)
+- [Tortoise ORM](https://tortoise-orm.readthedocs.io/)
+- [Tailwind CSS](https://tailwindcss.com/)
 - [Docker](https://docker.com/)
