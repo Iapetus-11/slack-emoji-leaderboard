@@ -9,8 +9,12 @@ export const fetchEmojis = () => {
   }).then((response) => response.json());
 };
 
-export const fetchEmojiLeaderboard = () => {
-  return fetch(`${PUBLIC_API_ADDRESS}/emojis/leaderboard/`, {
+/**
+ * @param {boolean} unique Whether or not duplicate emojis in messages are counted
+ * @returns {Promise<Object<string, number>>}
+ */
+export const fetchEmojiLeaderboard = (unique = false) => {
+  return fetch(`${PUBLIC_API_ADDRESS}/emojis/leaderboard/?unique=${unique}`, {
     headers: { Authorization: PUBLIC_API_AUTH },
   }).then((response) => response.json());
 };
