@@ -1,12 +1,14 @@
 FROM node:18-alpine AS build
 
-# make necessary directories and copy over files
 WORKDIR /slack-leaderboards/frontend
-COPY . .
 
-# install dependencies & build
+# install dependencies
+ADD package.json yarn.lock ./
 RUN yarn
+
+# build
 RUN yarn build
+COPY . .
 
 FROM node:18-alpine AS deploy
 
