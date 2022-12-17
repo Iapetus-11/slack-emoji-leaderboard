@@ -1,11 +1,13 @@
 <script>
   import { onDestroy, onMount } from 'svelte';
   import { fetchEmojiLeaderboard, fetchEmojis } from '$lib/services/emojis.js';
-  import LeaderboardItem from '$lib/components/LeaderboardItem.svelte';
+  import Leaderboard from "$lib/components/Leaderboard.svelte";
 
-  let loadInterval = null;
+  export let data
+
   let emojis = {};
   let leaderboard = {};
+  let loadInterval = null;
 
   const load = async () => {
     [emojis, leaderboard] = await Promise.all([fetchEmojis(), fetchEmojiLeaderboard()]);
@@ -24,7 +26,7 @@
   <link
     rel="icon"
     type="image/x-icon"
-    href={emojis[Object.entries(leaderboard)[0]?.[0]]?.url || '/favicon.png'}
+    href="{emojis[Object.entries(leaderboard)[0]?.[0]]?.url}"
   />
 </svelte:head>
 
