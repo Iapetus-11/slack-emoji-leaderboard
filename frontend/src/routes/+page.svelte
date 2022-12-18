@@ -27,7 +27,7 @@
 </svelte:head>
 
 <div
-  class={'flex flex-col h-full items-center p-3 space-y-5' + (data.limit > 10 ? ' justify-center' : '')}
+  class={'flex flex-col h-full items-center p-3 space-y-5' + (data.limit < 10 ? ' justify-center' : '')}
 >
   <Leaderboard {emojis} {leaderboard} limit={data.limit} />
 
