@@ -26,7 +26,9 @@
   <link rel="icon" type="image/x-icon" href={emojis[Object.entries(leaderboard)[0]?.[0]]?.url} />
 </svelte:head>
 
-<div class="flex flex-col md:h-screen justify-center items-center my-3 mx-3 space-y-5">
+<div
+  class={'flex flex-col h-full items-center p-3 space-y-5' + (data.limit > 10 ? ' justify-center' : '')}
+>
   <Leaderboard {emojis} {leaderboard} limit={data.limit} />
 
   <p class="text-gray-500 text-center text-xs mx-5 w-full sm:w-4/5 md:w-3/5 lg:w-2/5">
