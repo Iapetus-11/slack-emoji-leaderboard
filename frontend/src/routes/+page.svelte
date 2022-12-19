@@ -10,7 +10,7 @@
   let loadInterval = null;
 
   const load = async () => {
-    [emojis, leaderboard] = await Promise.all([fetchEmojis(), fetchEmojiLeaderboard()]);
+    [emojis, leaderboard] = await Promise.all([fetchEmojis(), fetchEmojiLeaderboard(data.unique)]);
   };
 
   onMount(() => {
