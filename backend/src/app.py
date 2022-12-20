@@ -44,6 +44,8 @@ api = FastAPI(
 
 @transactions.atomic()
 async def sync_emojis():
+    logger.info("Syncing emojis from Slack...")
+
     response = await app.client.emoji_list()
 
     await SlackEmojiAlias.all().delete()
@@ -62,6 +64,8 @@ async def sync_emojis():
     for alias_name, name in aliases.items():
         if emoji := emojis.get(name):
             await SlackEmojiAlias.create(id=alias_name, to_id=emoji.id)
+
+    logger.info("Synced slack emojis to database!")
 
 
 async def fetch_emoji_leaderboard(
@@ -285,13 +289,13 @@ async def api_emojis_leaderboards(since: datetime = Query(None), unique: bool = 
 
 @api.on_event("startup")
 async def api_handle_startup():
+    logger.info("Initializing Tortoise ORM...")
     await Tortoise.init(TORTOISE_ORM)
-    logger.info("Initialized Tortoise")
+    logger.info("Initialized Tortoise ORM!")
 
     await app_handler.connect_async()
 
     await sync_emojis()
-    logger.info("Synced Slack emojis to database")
 
 
 @api.on_event("shutdown")
