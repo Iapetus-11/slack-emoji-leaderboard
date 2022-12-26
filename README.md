@@ -1,4 +1,4 @@
-# slack-leaderboard
+# slack-emoji-leaderboard
 *Tracks emoji use to generate an emoji leaderboard for the MedShift slack*
 
 ## Setup / Deployment
