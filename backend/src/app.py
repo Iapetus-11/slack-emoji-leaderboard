@@ -29,6 +29,11 @@ from src.utils.slack import get_block_emojis
 
 EMOJIBOARD_RE = re.compile(r"emojiboard\(.*\)", re.IGNORECASE)
 
+AUTH_EXCLUDE = {
+    '/docs',
+    '/openapi.json',
+}
+
 logging.basicConfig(level=getattr(logging, CONFIG.LOG_LEVEL))
 logger = logging.getLogger("app")
 
@@ -245,7 +250,7 @@ async def app_handle_reaction_removed(event: dict[str, Any]):
 
 @api.middleware("http")
 async def api_middleware_auth(request: Request, call_next):
-    if request.headers.get("Authorization") != CONFIG.API_AUTH:
+    if request.headers.get("Authorization") != CONFIG.API_AUTH and request.scope.get('path') not in AUTH_EXCLUDE:
         return JSONResponse({"error": "unauthorized"}, status_code=403)
 
     return await call_next(request)
