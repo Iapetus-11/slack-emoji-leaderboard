@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import secrets
 from typing import Any
 
 import aiohttp
@@ -12,6 +11,7 @@ logging.basicConfig(level=getattr(logging, CONFIG.LOG_LEVEL))
 logger = logging.getLogger("app")
 
 client = discord.Client(intents=discord.Intents.all())
+
 
 async def sync_emojis(http: aiohttp.ClientSession):
     guild = client.get_guild(CONFIG.DISCORD_GUILD_ID)
@@ -33,21 +33,26 @@ async def sync_emojis(http: aiohttp.ClientSession):
 
     # Remove emojis not in the leaderboard
     if remove_emoji_coros := [
-            guild.delete_emoji(discord_emoji)
-            for discord_emoji in guild.emojis
-            if discord_emoji.name not in leaderboard
+        guild.delete_emoji(discord_emoji)
+        for discord_emoji in guild.emojis
+        if discord_emoji.name not in leaderboard
     ]:
         await asyncio.wait(map(asyncio.create_task, remove_emoji_coros))
 
     async def add_emoji(slack_emoji: str):
         try:
-            emoji_image = await (await http.get(slack_emojis[slack_emoji]["url"])).read()
+            emoji_image = await (
+                await http.get(slack_emojis[slack_emoji]["url"])
+            ).read()
             await guild.create_custom_emoji(
                 name=slack_emoji.replace("-", "_"),
                 image=emoji_image,
             )
         except Exception:
-            logger.error(f"An exception occurred while syncing emoji {slack_emoji!r}", exc_info=True)
+            logger.error(
+                f"An exception occurred while syncing emoji {slack_emoji!r}",
+                exc_info=True,
+            )
             raise
 
     # Add emojis
@@ -57,6 +62,7 @@ async def sync_emojis(http: aiohttp.ClientSession):
         if slack_emoji not in guild_emoji_names
     ]:
         await asyncio.wait(map(asyncio.create_task, add_emoji_coros))
+
 
 async def sync_emojis_task():
     http = aiohttp.ClientSession(headers={"Authorization": CONFIG.API_AUTH})

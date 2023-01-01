@@ -30,8 +30,8 @@ from src.utils.slack import get_block_emojis
 EMOJIBOARD_RE = re.compile(r"emojiboard\(.*\)", re.IGNORECASE)
 
 AUTH_EXCLUDE = {
-    '/docs',
-    '/openapi.json',
+    "/docs",
+    "/openapi.json",
 }
 
 logging.basicConfig(level=getattr(logging, CONFIG.LOG_LEVEL))
@@ -64,7 +64,9 @@ async def sync_emojis():
             aliases[name] = url.split(":")[1]
             continue
 
-        emojis[name], _ = await SlackEmoji.update_or_create(id=name, defaults={"url": url})
+        emojis[name], _ = await SlackEmoji.update_or_create(
+            id=name, defaults={"url": url}
+        )
 
     for alias_name, name in aliases.items():
         if emoji := emojis.get(name):
@@ -181,19 +183,27 @@ async def app_handle_message(event: dict[str, Any], say: AsyncSay):
 
         emoji_counter = Counter(get_block_emojis(event.get("blocks", [])))
         emoji_aliases = {
-            a.id: a.to_id for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
+            a.id: a.to_id
+            for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
         }
 
         for emoji, count in emoji_counter.items():
             await SlackMessageEmojiUse.create(
-                message=db_message, emoji_id=emoji_aliases.get(emoji, emoji), count=count
+                message=db_message,
+                emoji_id=emoji_aliases.get(emoji, emoji),
+                count=count,
             )
     # Handle an existing message being edited
     elif event_subtype == "message_changed":
-        if message := await SlackMessage.get_or_none(id=event["message"]["client_msg_id"]):
-            emoji_counter = Counter(get_block_emojis(event["message"].get("blocks", [])))
+        if message := await SlackMessage.get_or_none(
+            id=event["message"]["client_msg_id"]
+        ):
+            emoji_counter = Counter(
+                get_block_emojis(event["message"].get("blocks", []))
+            )
             emoji_aliases = {
-                a.id: a.to_id for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
+                a.id: a.to_id
+                for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
             }
 
             async with transactions.in_transaction():
@@ -201,11 +211,15 @@ async def app_handle_message(event: dict[str, Any], say: AsyncSay):
 
                 for emoji, count in emoji_counter.items():
                     await SlackMessageEmojiUse.create(
-                        message=message, emoji_id=emoji_aliases.get(emoji, emoji), count=count
+                        message=message,
+                        emoji_id=emoji_aliases.get(emoji, emoji),
+                        count=count,
                     )
     # Handle an existing message being deleted
     elif event_subtype == "message_deleted":
-        if message := await SlackMessage.get_or_none(id=event["previous_message"]["client_msg_id"]):
+        if message := await SlackMessage.get_or_none(
+            id=event["previous_message"]["client_msg_id"]
+        ):
             await message.delete()
 
 
@@ -250,7 +264,10 @@ async def app_handle_reaction_removed(event: dict[str, Any]):
 
 @api.middleware("http")
 async def api_middleware_auth(request: Request, call_next):
-    if request.headers.get("Authorization") != CONFIG.API_AUTH and request.scope.get('path') not in AUTH_EXCLUDE:
+    if (
+        request.headers.get("Authorization") != CONFIG.API_AUTH
+        and request.scope.get("path") not in AUTH_EXCLUDE
+    ):
         return JSONResponse({"error": "unauthorized"}, status_code=403)
 
     return await call_next(request)
@@ -288,7 +305,9 @@ async def api_emojis():
     description="Fetch a mapping of emojis to their total uses in messages and reactions",
     response_model=Api_Emojis_Leaderboard,
 )
-async def api_emojis_leaderboards(since: datetime = Query(None), unique: bool = Query(True)):
+async def api_emojis_leaderboards(
+    since: datetime = Query(None), unique: bool = Query(True)
+):
     return await fetch_emoji_leaderboard(since=since, unique=unique)
 
 
