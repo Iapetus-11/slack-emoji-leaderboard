@@ -8,7 +8,7 @@ services:
     volumes:
       - type: bind
         source: ./backend/.env
-        target: /slack-leaderboards/backend/.env
+        target: /slack-emoji-leaderboard/backend/.env
     init: true
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -20,5 +20,13 @@ services:
     volumes:
       - type: bind
         source: ./frontend/.env
-        target: /slack-leaderboards/frontend/.env
+        target: /slack-emoji-leaderboard/frontend/.env
+    init: true
+  sync:
+    build:
+      context: ./sync
+    volumes:
+      - type: bind
+        source: ./sync/.env
+        target: /slack-emoji-leaderboard/sync/.env
     init: true

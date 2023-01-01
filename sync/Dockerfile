@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=TRUE
 RUN python3 -m pip install poetry --no-cache-dir
 RUN poetry config virtualenvs.in-project true
 
-WORKDIR /slack-emoji-leaderboard/backend
+WORKDIR /slack-emoji-leaderboard/sync
 
 # install dependencies
 COPY pyproject.toml .
@@ -15,7 +15,6 @@ RUN poetry install --no-dev --no-interaction
 
 # copy over necessary folders
 COPY src src
-COPY migrations migrations
 
 # run app
 CMD poetry run python3 -m src.app

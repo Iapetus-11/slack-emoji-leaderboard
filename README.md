@@ -4,20 +4,25 @@
 ## Setup / Deployment
 
 ### Backend
-- You'll need: [Python 3.10.x+](https://python.org) and [Poetry](https://python-poetry.org)
-1. Change directories to the `backend` folder
-2. To install dependencies, run `poetry install`
-3. Create a `.env` file based off the `example.env`
-4. Setup the database with `poetry run aerich upgrade`
+- The Slack Bot which tracks use and the API
+1. You'll need: [Python 3.10.x+](https://python.org) and [Poetry](https://python-poetry.org)
+2. Change directories to the `backend` folder
+3. To install dependencies, run `poetry install`
+4. Create a `.env` file based off the `example.env`
+5. Setup the database with `poetry run aerich upgrade`
    - If you use the `poetry shell` command you can ommit the `poetry run` prefix from these commands
-5. To run the bot you can do `poetry run python3 -m src.app`
+6. To run the bot you can do `poetry run python3 -m src.app`
 
 ### Frontend
-- You'll need [Node 18+](https://nodejs.org/)
-1. Change directories to the `frontend` folder
-2. To install dependencies, run `yarn`
-3. Create a `.env` file based off the `example.env`
-4. Run `yarn dev` to run the frontend in dev mode
+- Simple frontend written in SvelteKit
+1. You'll need [Node 18+](https://nodejs.org/)
+2. Change directories to the `frontend` folder
+3. To install dependencies, run `yarn`
+4. Create a `.env` file based off the `example.env`
+5. Run `yarn dev` to run the frontend in dev mode
+
+### Sync
+- Discord bot which syncs the top emojis to a Discord server
 
 ### Docker
 - You'll need [Docker](https://docker.com/)
