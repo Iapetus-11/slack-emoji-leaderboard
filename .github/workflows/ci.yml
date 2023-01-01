@@ -31,10 +31,6 @@ jobs:
           path: ./frontend/node_modules
           key: venv-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
-      - name: install backend dependencies
-        working-directory: ./backend
-        run: poetry install
-
       - name: install frontend dependencies
         working-directory: ./frontend
         run: yarn
@@ -43,10 +39,10 @@ jobs:
         run: autoflake --remove-all-unused-imports --expand-star-imports --ignore-init-module-imports --in-place --recursive backend/src/ sync/src/
 
       - name: black fix
-        run: poetry run black backend/src/ sync/src/
+        run: black backend/src/ sync/src/
 
       - name: isort fix
-        run: poetry run isort backend/src/ sync/src/
+        run: isort backend/src/ sync/src/
 
       - name: prettier fix
         working-directory: ./frontend
@@ -59,4 +55,4 @@ jobs:
           commit_message: format / fix code
 
       - name: flake8
-        run: poetry run flake8 backend/src/ sync/src/
+        run: flake8 backend/src/ sync/src/
