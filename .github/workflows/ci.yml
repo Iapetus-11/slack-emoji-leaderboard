@@ -21,18 +21,8 @@ jobs:
         with:
           node-version: 18
 
-      - name: install poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-
-      - name: configure poetry
-        run: poetry config virtualenvs.in-project true
-
-      - name: load cached backend venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v2
-        with:
-          path: ./backend/.venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+      - name: install autoflake, black, isort, and flake8
+        run: pip install autoflake black isort flake8
 
       - name: load cached frontend node_modules
         id: cached-npm-dependencies
@@ -50,16 +40,13 @@ jobs:
         run: yarn
 
       - name: auto-flake
-        working-directory: ./backend
-        run: poetry run autoflake --remove-all-unused-imports --expand-star-imports --ignore-init-module-imports --in-place --recursive src/
+        run: autoflake --remove-all-unused-imports --expand-star-imports --ignore-init-module-imports --in-place --recursive backend/src/ sync/src/
 
       - name: black fix
-        working-directory: ./backend
-        run: poetry run black .
+        run: poetry run black backend/src/ sync/src/
 
       - name: isort fix
-        working-directory: ./backend
-        run: poetry run isort .
+        run: poetry run isort backend/src/ sync/src/
 
       - name: prettier fix
         working-directory: ./frontend
@@ -72,5 +59,4 @@ jobs:
           commit_message: format / fix code
 
       - name: flake8
-        working-directory: ./backend
-        run: poetry run flake8
+        run: poetry run flake8 backend/src/ sync/src/
