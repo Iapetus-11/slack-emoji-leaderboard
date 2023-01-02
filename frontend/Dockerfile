@@ -1,6 +1,6 @@
 FROM node:18-alpine AS build
 
-WORKDIR /slack-leaderboards/frontend
+WORKDIR /slack-emoji-leaderboard/frontend
 
 # install dependencies
 ADD package.json yarn.lock ./
@@ -12,13 +12,13 @@ RUN yarn build
 
 FROM node:18-alpine AS deploy
 
-WORKDIR /slack-leaderboards/frontend
+WORKDIR /slack-emoji-leaderboard/frontend
 
 RUN rm -rf ./*
 
 # copy over necessary files from build stage
-COPY --from=build /slack-leaderboards/frontend/package.json .
-COPY --from=build /slack-leaderboards/frontend/build .
+COPY --from=build /slack-emoji-leaderboard/frontend/package.json .
+COPY --from=build /slack-emoji-leaderboard/frontend/build .
 
 # install prod dependencies
 RUN yarn --prod

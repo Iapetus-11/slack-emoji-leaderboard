@@ -21,18 +21,8 @@ jobs:
         with:
           node-version: 18
 
-      - name: install poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-
-      - name: configure poetry
-        run: poetry config virtualenvs.in-project true
-
-      - name: load cached backend venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v2
-        with:
-          path: ./backend/.venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+      - name: install autoflake, black, isort, and flake8
+        run: pip install autoflake black isort flake8
 
       - name: load cached frontend node_modules
         id: cached-npm-dependencies
@@ -41,25 +31,33 @@ jobs:
           path: ./frontend/node_modules
           key: venv-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
-      - name: install backend dependencies
-        working-directory: ./backend
-        run: poetry install
-
       - name: install frontend dependencies
         working-directory: ./frontend
         run: yarn
 
-      - name: auto-flake
+      - name: auto-flake (backend)
         working-directory: ./backend
-        run: poetry run autoflake --remove-all-unused-imports --expand-star-imports --ignore-init-module-imports --in-place --recursive src/
+        run: autoflake --remove-all-unused-imports --expand-star-imports --ignore-init-module-imports --in-place --recursive src/
 
-      - name: black fix
-        working-directory: ./backend
-        run: poetry run black .
+      - name: auto-flake (sync)
+        working-directory: ./sync
+        run: autoflake --remove-all-unused-imports --expand-star-imports --ignore-init-module-imports --in-place --recursive src/
 
-      - name: isort fix
+      - name: black fix (backend)
         working-directory: ./backend
-        run: poetry run isort .
+        run: black src/
+
+      - name: black fix (sync)
+        working-directory: ./sync
+        run: black src/
+
+      - name: isort fix (backend)
+        working-directory: ./backend
+        run: isort src/
+
+      - name: isort fix (sync)
+        working-directory: ./sync
+        run: isort src/
 
       - name: prettier fix
         working-directory: ./frontend
@@ -71,6 +69,10 @@ jobs:
         with:
           commit_message: format / fix code
 
-      - name: flake8
+      - name: flake8 (backend)
         working-directory: ./backend
-        run: poetry run flake8
+        run: flake8 src/
+
+      - name: flake8 (sync)
+        working-directory: ./sync
+        run: flake8 src/
