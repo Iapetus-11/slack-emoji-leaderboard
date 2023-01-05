@@ -31,6 +31,10 @@ async def sync_emojis(http: aiohttp.ClientSession):
         )
     ).json()
 
+    # Discord doesn't allow dashes in emoji names
+    slack_emojis = {k.replace("-", "_"): v for k, v in slack_emojis.items()}
+    leaderboard = {k.replace("-", "_"): v for k, v in leaderboard.items()}
+
     # Remove emojis not in the leaderboard
     if emoji_removals := [
         discord_emoji
@@ -49,7 +53,7 @@ async def sync_emojis(http: aiohttp.ClientSession):
                 await http.get(slack_emojis[slack_emoji]["url"])
             ).read()
             await guild.create_custom_emoji(
-                name=slack_emoji.replace("-", "_"),
+                name=slack_emoji,
                 image=emoji_image,
             )
         except Exception:
