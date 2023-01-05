@@ -17,7 +17,7 @@ async def sync_emojis(http: aiohttp.ClientSession):
     guild = client.get_guild(CONFIG.DISCORD_GUILD_ID)
     guild_emoji_names = {e.name for e in guild.emojis}
 
-    slack_emojis: dict[dict[str, Any]] = await (
+    slack_emojis: dict[str, dict[str, Any]] = await (
         await http.get(
             f"{CONFIG.API_ADDRESS}/emojis/", headers={"Authorization": CONFIG.API_AUTH}
         )
@@ -26,18 +26,22 @@ async def sync_emojis(http: aiohttp.ClientSession):
     leaderboard: dict[str, int] = await (
         await http.get(
             f"{CONFIG.API_ADDRESS}/emojis/leaderboard/",
-            params={"unique": "true", "limit": "50"},
+            params={"unique": "true", "limit": str(guild.emoji_limit)},
             headers={"Authorization": CONFIG.API_AUTH},
         )
     ).json()
 
     # Remove emojis not in the leaderboard
-    if remove_emoji_coros := [
-        guild.delete_emoji(discord_emoji)
+    if emoji_removals := [
+        discord_emoji
         for discord_emoji in guild.emojis
         if discord_emoji.name not in leaderboard
     ]:
-        await asyncio.wait(map(asyncio.create_task, remove_emoji_coros))
+        logger.info(
+            f'Removing emojis ({len(emoji_removals)}/{len(guild.emojis)}): '
+            f'{", ".join(discord_emoji.name for discord_emoji in emoji_removals)}'
+        )
+        await asyncio.wait([asyncio.create_task(guild.delete_emoji(discord_emoji)) for discord_emoji in emoji_removals])
 
     async def add_emoji(slack_emoji: str):
         try:
@@ -56,12 +60,13 @@ async def sync_emojis(http: aiohttp.ClientSession):
             raise
 
     # Add emojis
-    if add_emoji_coros := [
-        add_emoji(slack_emoji)
+    if emoji_additions := [
+        slack_emoji
         for slack_emoji in leaderboard.keys()
         if slack_emoji not in guild_emoji_names
     ]:
-        await asyncio.wait(map(asyncio.create_task, add_emoji_coros))
+        logger.info(f'Adding emojis ({len(emoji_additions)}): {", ".join(emoji_additions)}')
+        await asyncio.wait([asyncio.create_task(add_emoji(slack_emoji)) for slack_emoji in emoji_additions])
 
 
 async def sync_emojis_task():
