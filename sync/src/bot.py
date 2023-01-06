@@ -10,7 +10,7 @@ from src.config import CONFIG
 logging.basicConfig(level=getattr(logging, CONFIG.LOG_LEVEL))
 logger = logging.getLogger("bot")
 
-client = discord.Client(intents=discord.Intents(guilds=True, emojis=True))
+client = discord.Client(intents=discord.Intents(guilds=True, emojis=True), log_handler=logger)
 
 
 async def sync_emojis(http: aiohttp.ClientSession):
