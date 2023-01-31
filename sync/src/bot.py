@@ -18,9 +18,7 @@ async def sync_emojis(http: aiohttp.ClientSession):
     guild_emoji_names = {e.name for e in guild.emojis}
 
     slack_emojis: dict[str, dict[str, Any]] = await (
-        await http.get(
-            f"{CONFIG.API_ADDRESS}/emojis/", headers={"Authorization": CONFIG.API_AUTH}
-        )
+        await http.get(f"{CONFIG.API_ADDRESS}/emojis/", headers={"Authorization": CONFIG.API_AUTH})
     ).json()
 
     leaderboard: dict[str, int] = await (
@@ -37,21 +35,22 @@ async def sync_emojis(http: aiohttp.ClientSession):
 
     # Remove emojis not in the leaderboard
     if emoji_removals := [
-        discord_emoji
-        for discord_emoji in guild.emojis
-        if discord_emoji.name not in leaderboard
+        discord_emoji for discord_emoji in guild.emojis if discord_emoji.name not in leaderboard
     ]:
         logger.info(
-            f'Removing emojis ({len(emoji_removals)}/{len(guild.emojis)}): '
+            f"Removing emojis ({len(emoji_removals)}/{len(guild.emojis)}): "
             f'{", ".join(discord_emoji.name for discord_emoji in emoji_removals)}'
         )
-        await asyncio.wait([asyncio.create_task(guild.delete_emoji(discord_emoji)) for discord_emoji in emoji_removals])
+        await asyncio.wait(
+            [
+                asyncio.create_task(guild.delete_emoji(discord_emoji))
+                for discord_emoji in emoji_removals
+            ]
+        )
 
     async def add_emoji(slack_emoji: str):
         try:
-            emoji_image = await (
-                await http.get(slack_emojis[slack_emoji]["url"])
-            ).read()
+            emoji_image = await (await http.get(slack_emojis[slack_emoji]["url"])).read()
             await guild.create_custom_emoji(
                 name=slack_emoji,
                 image=emoji_image,
@@ -65,12 +64,12 @@ async def sync_emojis(http: aiohttp.ClientSession):
 
     # Add emojis
     if emoji_additions := [
-        slack_emoji
-        for slack_emoji in leaderboard.keys()
-        if slack_emoji not in guild_emoji_names
+        slack_emoji for slack_emoji in leaderboard.keys() if slack_emoji not in guild_emoji_names
     ]:
         logger.info(f'Adding emojis ({len(emoji_additions)}): {", ".join(emoji_additions)}')
-        await asyncio.wait([asyncio.create_task(add_emoji(slack_emoji)) for slack_emoji in emoji_additions])
+        await asyncio.wait(
+            [asyncio.create_task(add_emoji(slack_emoji)) for slack_emoji in emoji_additions]
+        )
 
 
 async def sync_emojis_task():
