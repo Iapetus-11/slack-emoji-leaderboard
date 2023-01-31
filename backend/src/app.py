@@ -37,14 +37,10 @@ AUTH_EXCLUDE = {
 logging.basicConfig(level=getattr(logging, CONFIG.LOG_LEVEL))
 logger = logging.getLogger("app")
 
-app = AsyncApp(
-    token=CONFIG.SLACK_BOT_TOKEN,
-)
+app = AsyncApp(token=CONFIG.SLACK_BOT_TOKEN)
 app_handler = AsyncSocketModeHandler(app, CONFIG.SLACK_APP_TOKEN, logger=logger)
 
-api = FastAPI(
-    redoc_url=None,
-)
+api = FastAPI(redoc_url=None)
 
 
 @transactions.atomic()
@@ -217,10 +213,7 @@ async def app_handle_message(event: dict[str, Any], say: AsyncSay):
                     )
     # Handle an existing message being deleted
     elif event_subtype == "message_deleted":
-        if message := await SlackMessage.get_or_none(
-            id=event["previous_message"]["client_msg_id"]
-        ):
-            await message.delete()
+        await SlackMessage.filter(id=event["previous_message"]["client_msg_id"]).delete()
 
 
 @app.event("reaction_added")
