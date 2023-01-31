@@ -60,9 +60,7 @@ async def sync_emojis():
             aliases[name] = url.split(":")[1]
             continue
 
-        emojis[name], _ = await SlackEmoji.update_or_create(
-            id=name, defaults={"url": url}
-        )
+        emojis[name], _ = await SlackEmoji.update_or_create(id=name, defaults={"url": url})
 
     for alias_name, name in aliases.items():
         if emoji := emojis.get(name):
@@ -179,8 +177,7 @@ async def app_handle_message(event: dict[str, Any], say: AsyncSay):
 
         emoji_counter = Counter(get_block_emojis(event.get("blocks", [])))
         emoji_aliases = {
-            a.id: a.to_id
-            for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
+            a.id: a.to_id for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
         }
 
         for emoji, count in emoji_counter.items():
@@ -191,15 +188,10 @@ async def app_handle_message(event: dict[str, Any], say: AsyncSay):
             )
     # Handle an existing message being edited
     elif event_subtype == "message_changed":
-        if message := await SlackMessage.get_or_none(
-            id=event["message"]["client_msg_id"]
-        ):
-            emoji_counter = Counter(
-                get_block_emojis(event["message"].get("blocks", []))
-            )
+        if message := await SlackMessage.get_or_none(id=event["message"]["client_msg_id"]):
+            emoji_counter = Counter(get_block_emojis(event["message"].get("blocks", [])))
             emoji_aliases = {
-                a.id: a.to_id
-                for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
+                a.id: a.to_id for a in await SlackEmojiAlias.filter(id__in=[*emoji_counter.keys()])
             }
 
             async with transactions.in_transaction():
@@ -298,9 +290,7 @@ async def api_emojis():
     description="Fetch a mapping of emojis to their total uses in messages and reactions",
     response_model=Api_Emojis_Leaderboard,
 )
-async def api_emojis_leaderboards(
-    since: datetime = Query(None), unique: bool = Query(True)
-):
+async def api_emojis_leaderboards(since: datetime = Query(None), unique: bool = Query(True)):
     return await fetch_emoji_leaderboard(since=since, unique=unique)
 
 
