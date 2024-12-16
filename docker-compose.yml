@@ -22,11 +22,11 @@ services:
         source: ./frontend/.env
         target: /slack-emoji-leaderboard/frontend/.env
     init: true
-  sync:
-    build:
-      context: ./sync
-    volumes:
-      - type: bind
-        source: ./sync/.env
-        target: /slack-emoji-leaderboard/sync/.env
-    init: true
+  # sync:
+  #   build:
+  #     context: ./sync
+  #   volumes:
+  #     - type: bind
+  #       source: ./sync/.env
+  #       target: /slack-emoji-leaderboard/sync/.env
+  #   init: true
